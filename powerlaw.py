@@ -929,7 +929,7 @@ class Distribution(object):
         from numpy import log
         return log(self.likelihoods(data))
 
-    def plot_ccdf(self, data=None, ax=None, survival=True, **kwargs):
+    def plot_ccdf(self, data=None, ax=None, survival=True, shift_by=1., **kwargs):
         """
         Plots the complementary cumulative distribution function (CDF) of the
         theoretical distribution for the values given in data within xmin and
@@ -950,9 +950,9 @@ class Distribution(object):
         ax : matplotlib axis
             The axis to which the plot was made.
         """
-        return self.plot_cdf(data, ax=None, survival=survival, **kwargs)
+        return self.plot_cdf(data, ax=None, survival=survival, shift_by=shift_by, **kwargs)
 
-    def plot_cdf(self, data=None, ax=None, survival=False, **kwargs):
+    def plot_cdf(self, data=None, ax=None, survival=False, shift_by=1., **kwargs):
         """
         Plots the cumulative distribution function (CDF) of the
         theoretical distribution for the values given in data within xmin and
@@ -975,15 +975,21 @@ class Distribution(object):
         """
         if data is None and hasattr(self, 'parent_Fit'):
             data = self.parent_Fit.data
+
+        if shift_by == "original_data":
+            from numpy import where
+            bins_orig, ccdf_orig = cdf(self.parent_Fit.data_original, survival=survival)
+            shift_by = ccdf_orig[where(bins_orig==self.xmin)][0]
+
         from numpy import unique
         bins = unique(trim_to_range(data, xmin=self.xmin, xmax=self.xmax))
         CDF = self.cdf(bins, survival=survival)
         if not ax:
             import matplotlib.pyplot as plt
-            plt.plot(bins, CDF, **kwargs)
+            plt.plot(bins, CDF*shift_by, **kwargs)
             ax = plt.gca()
         else:
-            ax.plot(bins, CDF, **kwargs)
+            ax.plot(bins, CDF*shift_by, **kwargs)
         ax.set_xscale("log")
         ax.set_yscale("log")
         return ax
